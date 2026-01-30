@@ -155,23 +155,15 @@ def simulate_poisson_hh(weights, u_input_norm, seed=42):
     
     print("Starting HH simulation (Refined)...")
     for t in range(T_total):
-        # 1. Rising-Edge Spike Detection
-        # Thr = -20mV
-        spikes = ((V > -20.0) & (V_prev <= -20.0)).astype(float)
-        res_spikes[t] = spikes
+        # 0. Store state BEFORE update
+        V_old = V.copy()
         
-        # 2. Update Synaptic Traces (Spike-based)
-        s_trace = s_trace * decay_syn + spikes
-        
-        # 3. Input Current (Poisson -> Trace -> I_in)
+        # 1. Input Current (Poisson -> Trace -> I_in)
         s_in = spikes_in[t]
         s_in_trace = s_in_trace * decay_in + s_in
         I_pulse = (5.0 * s_in_trace) * W_in + 6.0 # 5nA scale + 6nA bias
         
-        # 4. HH Dynamics (dV/dt)
-        V_prev = V.copy()
-        
-        # Gates
+        # 2. Gates update
         a_inf = 1.0 / (1.0 + np.exp(-(V + 50.0) / 20.0))
         b_inf = 1.0 / (1.0 + np.exp((V + 80.0) / 6.0))
         b_gate += (dt / tauA) * (b_inf - b_gate)
@@ -186,13 +178,13 @@ def simulate_poisson_hh(weights, u_input_norm, seed=42):
         beta_n = 0.125 * np.exp(-(V + 65.0) / 80.0)
         n += dt * (alpha_n * (1 - n) - beta_n * n)
         
-        # 5. Conductance-based Recurrent Current
+        # 3. Conductance-based Recurrent Current
         syn_activity = weights @ s_trace
         g_exc = np.maximum(0, syn_activity)
         g_inh = np.maximum(0, -syn_activity)
         I_syn = g_exc * (V - Eexc) + g_inh * (V - Einh)
         
-        # Update V
+        # 4. HH prądy + update V
         I_Na = gNa * (m**3) * h * (V - ENa)
         I_K = gK * (n**4) * (V - EK)
         I_L = gL * (V - EL)
@@ -202,6 +194,13 @@ def simulate_poisson_hh(weights, u_input_norm, seed=42):
         V += dt * dV
         
         if np.any(np.abs(V) > 150): V = np.clip(V, -100, 100)
+
+        # 5. Rising-Edge Spike Detection (Correct Logic)
+        spikes = ((V > -20.0) & (V_old <= -20.0)).astype(float)
+        res_spikes[t] = spikes
+        
+        # 6. Update Synaptic Traces (Post-Spike)
+        s_trace = s_trace * decay_syn + spikes
 
     print("Simulation finished.")
     return res_spikes
