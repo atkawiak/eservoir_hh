@@ -3,4 +3,6 @@ cache/
 *.parquet
 *.pkl
 *.png
+.agent/
+.gemini/
 .ipynb_checkpoints/
