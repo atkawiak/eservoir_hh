@@ -1,0 +1,6 @@
+[submodule ".agent/skills/awesome"]
+	path = .agent/skills/awesome
+	url = https://github.com/sickn33/antigravity-awesome-skills
+[submodule ".agent/skills/enterprise"]
+	path = .agent/skills/enterprise
+	url = https://github.com/rmyndharis/antigravity-skills
