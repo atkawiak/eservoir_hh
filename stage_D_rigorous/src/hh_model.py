@@ -40,14 +40,25 @@ class HHModel:
         N = self.cfg.hh.N
         density = self.cfg.hh.density
         n_exc = int(0.8 * N)
-        ei_vec = np.ones(N); ei_vec[n_exc:] = -1
         
+        # Connection mask
         mask = sp.random(N, N, density=density, random_state=self.rng_rec).toarray() > 0
         W = np.zeros((N, N))
-        W[mask] = self.rng_rec.uniform(0, 1.0, size=np.sum(mask))
-        W *= ei_vec
         
-        # Spectral Radius Scaling (Initial)
+        # Excitatory weights (positive)
+        W[:n_exc, :] = self.rng_rec.uniform(0, 1.0, size=(n_exc, N))
+        # Inhibitory weights (negative and stronger)
+        # Scaled by inh_scale from config or default 4.0
+        inh_scale = getattr(self.cfg.hh, 'inh_scale', 4.0)
+        W[n_exc:, :] = -self.rng_rec.uniform(0, 1.0, size=(N-n_exc, N)) * inh_scale
+        
+        # Apply sparse mask
+        W *= mask
+        
+        # Zero diagonal (no self-loops)
+        np.fill_diagonal(W, 0)
+        
+        # Spectral Radius Scaling
         radius = np.max(np.abs(np.linalg.eigvals(W)))
         if radius > 1e-10: W /= radius
         return W
