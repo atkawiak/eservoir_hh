@@ -76,11 +76,9 @@ class Reservoir:
         self.syn_inh.add_spikes(self.prev_spikes, self.W_inh)
         
         # 3. Propagate external input spikes through W_in
-        # Create a full-size spike vector for the input synapses
-        input_term = np.zeros(self.n_neurons)
         # Each input spike j is multiplied by its weight W_in[j] and hits neuron input_indices[j]
-        input_term[self.input_indices] = input_spikes * self.W_in
-        self.syn_in.add_spikes(np.ones(self.n_neurons, dtype=bool), np.diag(input_term))
+        # This is equivalent to self.syn_in.g[self.input_indices] += input_spikes * self.W_in
+        self.syn_in.g[self.input_indices] += input_spikes * self.W_in
         
         # 4. Calculate total synaptic currents
         I_syn = self.syn_exc.get_current(self.neuron_group.V) + \

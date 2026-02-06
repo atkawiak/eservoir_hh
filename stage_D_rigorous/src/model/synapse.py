@@ -19,8 +19,9 @@ class SynapseGroup:
         spike_vector: boolean array of which neurons fired
         weight_matrix: (size_to, size_from)
         """
-        # Conductance increase: g_i = sum_j (W_ij * spike_j)
-        self.g += np.dot(weight_matrix, spike_vector.astype(float))
+        if np.any(spike_vector):
+            # Conductance increase: g_i = sum_j (W_ij * spike_j)
+            self.g += np.dot(weight_matrix, spike_vector.astype(float))
 
     def get_current(self, V_mem):
         # I = g * (V_rev - V_mem)
